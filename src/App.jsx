@@ -1,0 +1,116 @@
+import { useEffect, useCallback, Suspense } from 'react'
+import useViewStore from './store/useViewStore'
+import ThreeScene from './components/three/ThreeScene'
+import Navbar from './components/layout/Navbar'
+import ScrollFadeWrapper from './components/layout/ScrollFadeWrapper'
+import HeroSection from './components/views/HomeView'
+import ServicesSection from './components/views/ServicesView'
+import BookingSection from './components/views/BookingView'
+
+function SceneLoader() {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: '#0A1628',
+    }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+        <div style={{
+          width: '48px', height: '48px', borderRadius: '50%',
+          border: '2px solid rgba(0, 212, 255, 0.2)',
+          borderTopColor: '#00D4FF',
+          animation: 'spin 1s linear infinite',
+        }} />
+        <span style={{ fontSize: '11px', letterSpacing: '0.15em', color: '#94A3B8', textTransform: 'uppercase', fontFamily: 'var(--font-accent)' }}>
+          Loading Experience
+        </span>
+      </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  )
+}
+
+export default function App() {
+  const setScroll = useViewStore((s) => s.setScroll)
+  const setMouse = useViewStore((s) => s.setMouse)
+
+  const handleScroll = useCallback(() => {
+    const scrollHeight = document.documentElement.scrollHeight - window.innerHeight
+    const progress = scrollHeight > 0 ? window.scrollY / scrollHeight : 0
+    setScroll(Math.min(Math.max(progress, 0), 1))
+  }, [setScroll])
+
+  const handleMouseMove = useCallback((e) => {
+    const x = (e.clientX / window.innerWidth) * 2 - 1
+    const y = -(e.clientY / window.innerHeight) * 2 + 1
+    setMouse({ x, y })
+  }, [setMouse])
+
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    window.addEventListener('mousemove', handleMouseMove, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('mousemove', handleMouseMove)
+    }
+  }, [handleScroll, handleMouseMove])
+
+  return (
+    <div style={{ position: 'relative', minHeight: '100vh', background: '#0A1628' }}>
+      {/* 3D Canvas — persistent fixed background */}
+      <Suspense fallback={<SceneLoader />}>
+        <ThreeScene />
+      </Suspense>
+
+      {/* HTML Overlay — scroll-driven sections */}
+      <div id="html-overlay">
+        <Navbar />
+
+        {/* Scroll spacer — drives total scroll length for the narrative */}
+        <div className="scroll-spacer" />
+
+        {/* Hero section — visible at start, fades before door opens */}
+        <ScrollFadeWrapper fadeIn={0} activeStart={0} activeEnd={0.14} fadeOut={0.20}>
+          <HeroSection />
+        </ScrollFadeWrapper>
+
+        {/* Services section — visible during living room phase */}
+        <ScrollFadeWrapper fadeIn={0.28} activeStart={0.32} activeEnd={0.48} fadeOut={0.54}>
+          <ServicesSection />
+        </ScrollFadeWrapper>
+
+        {/* Booking section — visible during sunlit room phase */}
+        <ScrollFadeWrapper fadeIn={0.64} activeStart={0.70} activeEnd={0.95} fadeOut={1.01}>
+          <BookingSection />
+        </ScrollFadeWrapper>
+
+        {/* Footer */}
+        <footer className="site-footer">
+          <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <svg viewBox="0 0 64 64" fill="none" style={{ width: '24px', height: '24px' }}>
+                <defs>
+                  <linearGradient id="footerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#00D4FF" />
+                    <stop offset="100%" stopColor="#7C3AED" />
+                  </linearGradient>
+                </defs>
+                <path d="M32 4 L44 18 L58 14 L48 28 L56 38 L40 34 L32 52 L24 34 L8 38 L16 28 L6 14 L20 18 Z" fill="url(#footerGrad)" />
+              </svg>
+              <span style={{ fontSize: '14px', color: '#94A3B8', fontFamily: 'var(--font-body)' }}>
+                © 2024 Aerohawk Service. All rights reserved.
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '24px', fontSize: '12px', color: '#94A3B8', flexWrap: 'wrap' }}>
+              <span>NSW, Australia</span>
+              <span>•</span>
+              <span>info@aerohawk.com.au</span>
+              <span>•</span>
+              <span>+61 2 XXXX XXXX</span>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </div>
+  )
+}

@@ -1,0 +1,299 @@
+@import "tailwindcss";
+
+/* ===== Aerohawk Design System ===== */
+
+@theme {
+  --color-aero-deep: #0A1628;
+  --color-aero-midnight: #0F1D32;
+  --color-aero-surface: #132238;
+  --color-aero-cyan: #00D4FF;
+  --color-aero-cyan-muted: #0891B2;
+  --color-aero-cyan-glow: rgba(0, 212, 255, 0.15);
+  --color-aero-violet: #7C3AED;
+  --color-aero-violet-glow: rgba(124, 58, 237, 0.15);
+  --color-aero-white: #F0F4F8;
+  --color-aero-ghost: #94A3B8;
+  --color-aero-glass: rgba(15, 29, 50, 0.6);
+  --color-aero-glass-border: rgba(0, 212, 255, 0.12);
+  --color-aero-glass-hover: rgba(0, 212, 255, 0.08);
+
+  --font-heading: 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-accent: 'Syne', sans-serif;
+}
+
+/* ===== Global Resets ===== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: #0A1628;
+  color: #F0F4F8;
+  overflow-x: hidden;
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* ===== Custom Scrollbar ===== */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0A1628;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #0891B2;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00D4FF;
+}
+
+/* ===== Canvas Layer — fixed behind everything ===== */
+
+#three-canvas-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+#three-canvas-container canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ===== HTML Overlay — scrollable content on top ===== */
+
+#html-overlay {
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+/* ===== Scroll Architecture ===== */
+
+.scroll-spacer {
+  height: 500vh;
+  pointer-events: none;
+  position: relative;
+  z-index: 0;
+}
+
+.scroll-fixed-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+/* ===== Section Spacing ===== */
+
+.section-hero {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120px 24px 60px;
+  position: relative;
+}
+
+.section-content {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120px 24px 80px;
+  position: relative;
+}
+
+@media (max-width: 768px) {
+  .section-hero {
+    padding: 100px 16px 40px;
+  }
+  .section-content {
+    padding: 80px 16px 60px;
+  }
+}
+
+/* ===== Glassmorphism ===== */
+
+.glass {
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: rgba(15, 29, 50, 0.65);
+  border: 1px solid rgba(0, 212, 255, 0.12);
+}
+
+.glass-hover {
+  transition: all 0.3s ease;
+}
+
+.glass-hover:hover {
+  background: rgba(15, 29, 50, 0.8);
+  border-color: rgba(0, 212, 255, 0.25);
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.08);
+}
+
+/* ===== Glow Effects ===== */
+
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.12),
+              0 0 60px rgba(0, 212, 255, 0.04);
+}
+
+.glow-cyan-strong {
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.25),
+              0 0 60px rgba(0, 212, 255, 0.1),
+              0 0 100px rgba(0, 212, 255, 0.05);
+}
+
+/* ===== Gradient Texts ===== */
+
+.gradient-text {
+  background: linear-gradient(135deg, #00D4FF, #7C3AED);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-white {
+  background: linear-gradient(135deg, #ffffff, #94A3B8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ===== Animations ===== */
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(0, 212, 255, 0.2); }
+  50% { box-shadow: 0 0 40px rgba(0, 212, 255, 0.4), 0 0 80px rgba(0, 212, 255, 0.1); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+/* ===== Navbar glass ===== */
+
+.nav-glass {
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  background: rgba(10, 22, 40, 0.75);
+  border-bottom: 1px solid rgba(0, 212, 255, 0.08);
+}
+
+/* ===== Service card ===== */
+
+.service-card {
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  background: rgba(15, 29, 50, 0.55);
+  border: 1px solid rgba(0, 212, 255, 0.1);
+  border-radius: 24px;
+  padding: 32px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.service-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(0, 212, 255, 0.25);
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.08), 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+/* ===== Form inputs ===== */
+
+.form-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid rgba(0, 212, 255, 0.15);
+  padding: 12px 0;
+  color: #F0F4F8;
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-input:focus {
+  border-color: #00D4FF;
+  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.2);
+}
+
+.form-input::placeholder {
+  color: rgba(148, 163, 184, 0.6);
+}
+
+.form-label {
+  display: block;
+  font-family: var(--font-accent);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #94A3B8;
+  margin-bottom: 8px;
+}
+
+/* ===== Booking form glass ===== */
+
+.form-glass {
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: rgba(15, 29, 50, 0.7);
+  border: 1px solid rgba(0, 212, 255, 0.1);
+  border-radius: 24px;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.08), 0 0 60px rgba(0, 212, 255, 0.03);
+}
+
+/* ===== Selection ===== */
+
+::selection {
+  background: rgba(0, 212, 255, 0.3);
+  color: #ffffff;
+}
+
+/* ===== Footer ===== */
+
+.site-footer {
+  position: relative;
+  z-index: 10;
+  padding: 32px 24px;
+  border-top: 1px solid rgba(0, 212, 255, 0.08);
+}
