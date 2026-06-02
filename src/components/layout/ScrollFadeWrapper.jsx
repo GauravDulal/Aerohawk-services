@@ -1,15 +1,11 @@
 import { useMemo } from 'react'
-import { motion } from 'framer-motion'
 import useViewStore from '../../store/useViewStore'
 
 /**
  * Wraps a section in a fixed overlay that fades in/out based on scroll progress.
- *
- * @param {number} fadeIn      - Scroll progress where fade-in begins (opacity 0 → 1)
- * @param {number} activeStart - Scroll progress where section is fully visible
- * @param {number} activeEnd   - Scroll progress where fade-out begins
- * @param {number} fadeOut     - Scroll progress where section is fully invisible
- * @param {React.ReactNode} children
+ * The outer wrapper ALWAYS has pointer-events: none.
+ * The inner content gets pointer-events: auto ONLY when visible.
+ * This prevents invisible overlays from blocking clicks on visible sections below.
  */
 export default function ScrollFadeWrapper({
   fadeIn = 0,
@@ -47,12 +43,20 @@ export default function ScrollFadeWrapper({
       className="scroll-fixed-overlay"
       style={{
         opacity,
-        pointerEvents: isInvisible ? 'none' : 'auto',
+        pointerEvents: 'none',
         visibility: isInvisible ? 'hidden' : 'visible',
-        transition: 'opacity 0.05s linear',
       }}
     >
-      {children}
+      <div style={{
+        pointerEvents: isInvisible ? 'none' : 'auto',
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        {children}
+      </div>
     </div>
   )
 }

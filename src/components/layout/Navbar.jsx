@@ -3,10 +3,17 @@ import { motion, AnimatePresence } from 'framer-motion'
 import useViewStore from '../../store/useViewStore'
 
 const NAV_ITEMS = [
-  { id: 'hero', label: 'Home' },
-  { id: 'services', label: 'Services' },
-  { id: 'booking', label: 'Book Now' },
+  { id: 'hero', label: 'Home', scrollTarget: 0 },
+  { id: 'services', label: 'Services', scrollTarget: 0.36 },
+  { id: 'booking', label: 'Book Now', scrollTarget: 0.74 },
 ]
+
+function scrollToProgress(target) {
+  const scrollHeight = document.documentElement.scrollHeight - window.innerHeight
+  if (scrollHeight > 0) {
+    window.scrollTo({ top: scrollHeight * target, behavior: 'smooth' })
+  }
+}
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -19,9 +26,8 @@ export default function Navbar() {
     else setActiveSection('booking')
   }, [scrollProgress])
 
-  const scrollToSection = (id) => {
-    const el = document.getElementById(id)
-    if (el) el.scrollIntoView({ behavior: 'smooth' })
+  const handleNav = (item) => {
+    scrollToProgress(item.scrollTarget)
     setMobileOpen(false)
   }
 
@@ -37,7 +43,7 @@ export default function Navbar() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '80px' }}>
             {/* Logo */}
             <motion.button
-              onClick={() => scrollToSection('hero')}
+              onClick={() => scrollToProgress(0)}
               style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'none', border: 'none', cursor: 'pointer' }}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -65,7 +71,7 @@ export default function Navbar() {
               {NAV_ITEMS.map((item) => (
                 <motion.button
                   key={item.id}
-                  onClick={() => scrollToSection(item.id)}
+                  onClick={() => handleNav(item)}
                   style={{
                     position: 'relative',
                     padding: '10px 20px',
@@ -106,7 +112,7 @@ export default function Navbar() {
               ))}
 
               <motion.button
-                onClick={() => scrollToSection('booking')}
+                onClick={() => scrollToProgress(0.74)}
                 style={{
                   marginLeft: '16px',
                   padding: '10px 24px',
@@ -164,7 +170,7 @@ export default function Navbar() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 30 }}
                 transition={{ delay: i * 0.1, duration: 0.4 }}
-                onClick={() => scrollToSection(item.id)}
+                onClick={() => handleNav(item)}
                 style={{
                   fontSize: '30px', fontWeight: 700, fontFamily: 'var(--font-heading)',
                   background: 'none', border: 'none', cursor: 'pointer',
