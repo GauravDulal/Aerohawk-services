@@ -150,7 +150,7 @@ export default function App() {
         </ScrollFadeWrapper>
 
         {/* Booking section — visible during pristine room phase */}
-        <ScrollFadeWrapper fadeIn={0.68} activeStart={0.72} activeEnd={0.95} fadeOut={1.01}>
+        <ScrollFadeWrapper fadeIn={0.68} activeStart={0.72} activeEnd={1.0} fadeOut={1.01}>
           <BookingSection />
         </ScrollFadeWrapper>
 

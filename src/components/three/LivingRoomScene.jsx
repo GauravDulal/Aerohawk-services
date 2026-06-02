@@ -1,4 +1,4 @@
-import { useRef, useMemo, useState } from 'react'
+import { useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import useViewStore from '../../store/useViewStore'
@@ -466,7 +466,6 @@ function HallwayPartition() {
 
 export default function LivingRoomScene() {
   const groupRef = useRef()
-  const [unmounted, setUnmounted] = useState(false)
 
   const floorMat = useMemo(
     () => new THREE.MeshStandardMaterial({ color: new THREE.Color('#A0A0A0'), roughness: 0.08, metalness: 0.3, envMapIntensity: 0.6 }),
@@ -477,14 +476,9 @@ export default function LivingRoomScene() {
     []
   )
 
-  useFrame((_, delta) => {
-    const { scrollProgress, cleanProgress } = useViewStore.getState()
-
-    // Conditional unmount outside active phase
-    if ((scrollProgress < 0.10 || scrollProgress > 0.75) && !unmounted) setUnmounted(true)
-    if (scrollProgress >= 0.10 && scrollProgress <= 0.75 && unmounted) setUnmounted(false)
-
+  useFrame(() => {
     if (!groupRef.current) return
+    const { scrollProgress, cleanProgress } = useViewStore.getState()
 
     const fade = scrollProgress < 0.15 ? 0
       : scrollProgress < 0.22 ? (scrollProgress - 0.15) / 0.07
@@ -505,8 +499,6 @@ export default function LivingRoomScene() {
     })
     groupRef.current.visible = fade > 0.01
   })
-
-  if (unmounted) return null
 
   return (
     <group ref={groupRef}>

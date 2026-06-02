@@ -1,4 +1,4 @@
-import { useRef, useMemo, useState } from 'react'
+import { useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import useViewStore from '../../store/useViewStore'
@@ -351,7 +351,6 @@ function AerohawkBadge({ doorHeight }) {
 
 export default function DoorScene() {
   const groupRef = useRef()
-  const [unmounted, setUnmounted] = useState(false)
 
   // SCALED UP dimensions
   const doorWidth = 1.2
@@ -373,15 +372,10 @@ export default function DoorScene() {
     []
   )
 
-  // Fade out + conditional unmount to free GPU memory
+  // Fade out as camera passes through
   useFrame(() => {
-    const { scrollProgress } = useViewStore.getState()
-
-    // Unmount when well past phase A
-    if (scrollProgress > 0.40 && !unmounted) setUnmounted(true)
-    if (scrollProgress <= 0.35 && unmounted) setUnmounted(false)
-
     if (!groupRef.current) return
+    const { scrollProgress } = useViewStore.getState()
     const fade = scrollProgress < 0.28 ? 1 : scrollProgress > 0.35 ? 0 : 1 - (scrollProgress - 0.28) / 0.07
 
     groupRef.current.traverse((child) => {
@@ -392,8 +386,6 @@ export default function DoorScene() {
     })
     groupRef.current.visible = fade > 0.01
   })
-
-  if (unmounted) return null
 
   return (
     <group ref={groupRef} position={[0, 0, 0]}>
