@@ -88,15 +88,7 @@ export default function App() {
         <footer className="site-footer">
           <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <svg viewBox="0 0 64 64" fill="none" style={{ width: '24px', height: '24px' }}>
-                <defs>
-                  <linearGradient id="footerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#00D4FF" />
-                    <stop offset="100%" stopColor="#7C3AED" />
-                  </linearGradient>
-                </defs>
-                <path d="M32 4 L44 18 L58 14 L48 28 L56 38 L40 34 L32 52 L24 34 L8 38 L16 28 L6 14 L20 18 Z" fill="url(#footerGrad)" />
-              </svg>
+              <img src="/aerohawk-logo.png" alt="Aerohawk" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'contain' }} />
               <span style={{ fontSize: '14px', color: '#94A3B8', fontFamily: 'var(--font-body)' }}>
                 © 2024 Aerohawk Service. All rights reserved.
               </span>

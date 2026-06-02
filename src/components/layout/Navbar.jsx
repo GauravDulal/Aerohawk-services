@@ -42,17 +42,12 @@ export default function Navbar() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <div style={{ width: '40px', height: '40px' }}>
-                <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-                  <defs>
-                    <linearGradient id="navHawkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#00D4FF" />
-                      <stop offset="100%" stopColor="#7C3AED" />
-                    </linearGradient>
-                  </defs>
-                  <path d="M32 4 L44 18 L58 14 L48 28 L56 38 L40 34 L32 52 L24 34 L8 38 L16 28 L6 14 L20 18 Z" fill="url(#navHawkGrad)" />
-                  <path d="M32 52 L28 58 L32 56 L36 58 Z" fill="#00D4FF" opacity="0.8" />
-                </svg>
+              <div style={{ width: '40px', height: '40px', borderRadius: '8px', overflow: 'hidden' }}>
+                <img
+                  src="/aerohawk-logo.png"
+                  alt="Aerohawk Logo"
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                />
               </div>
               <div>
                 <span style={{ fontFamily: 'var(--font-accent)', fontSize: '20px', fontWeight: 700, letterSpacing: '0.08em', display: 'block', lineHeight: 1 }}>
