@@ -1,4 +1,6 @@
-import { useEffect, useCallback, Suspense } from 'react'
+import { useEffect, useCallback, useState, Suspense } from 'react'
+import { useProgress } from '@react-three/drei'
+import { motion, AnimatePresence } from 'framer-motion'
 import useViewStore from './store/useViewStore'
 import ThreeScene from './components/three/ThreeScene'
 import Navbar from './components/layout/Navbar'
@@ -7,32 +9,99 @@ import HeroSection from './components/views/HomeView'
 import ServicesSection from './components/views/ServicesView'
 import BookingSection from './components/views/BookingView'
 
-function SceneLoader() {
+/* ── Preloader ──────────────────────────────────────── */
+
+function Preloader({ onComplete }) {
+  const { progress, active } = useProgress()
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    if (progress >= 100 && !active) {
+      const timer = setTimeout(() => {
+        setReady(true)
+        onComplete?.()
+      }, 400)
+      return () => clearTimeout(timer)
+    }
+  }, [progress, active, onComplete])
+
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 0,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: '#0A1628',
-    }}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-        <div style={{
-          width: '48px', height: '48px', borderRadius: '50%',
-          border: '2px solid rgba(0, 212, 255, 0.2)',
-          borderTopColor: '#00D4FF',
-          animation: 'spin 1s linear infinite',
-        }} />
-        <span style={{ fontSize: '11px', letterSpacing: '0.15em', color: '#94A3B8', textTransform: 'uppercase', fontFamily: 'var(--font-accent)' }}>
-          Loading Experience
-        </span>
-      </div>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
+    <AnimatePresence>
+      {!ready && (
+        <motion.div
+          key="preloader"
+          initial={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.6, ease: 'easeInOut' }}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            background: '#0A1628',
+          }}
+        >
+          {/* Logo */}
+          <motion.div
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            style={{ marginBottom: '40px' }}
+          >
+            <img
+              src="/aerohawk-logo.png"
+              alt="Aerohawk"
+              style={{
+                width: '80px', height: '80px', objectFit: 'contain',
+                filter: 'drop-shadow(0 0 20px rgba(0, 212, 255, 0.4))',
+              }}
+            />
+          </motion.div>
+
+          {/* Progress counter */}
+          <div style={{
+            fontFamily: 'var(--font-accent)', fontSize: '32px', fontWeight: 700,
+            letterSpacing: '0.1em', marginBottom: '24px',
+            background: 'linear-gradient(135deg, #00D4FF, #7C3AED)',
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}>
+            {Math.round(progress)}%
+          </div>
+
+          {/* Progress bar */}
+          <div style={{
+            width: '200px', height: '2px', borderRadius: '1px',
+            background: 'rgba(0, 212, 255, 0.15)',
+            overflow: 'hidden',
+          }}>
+            <motion.div
+              style={{
+                height: '100%', borderRadius: '1px',
+                background: 'linear-gradient(90deg, #00D4FF, #7C3AED)',
+              }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+            />
+          </div>
+
+          {/* Label */}
+          <div style={{
+            marginTop: '16px', fontSize: '11px', letterSpacing: '0.2em',
+            textTransform: 'uppercase', color: '#94A3B8',
+            fontFamily: 'var(--font-accent)',
+          }}>
+            Loading Experience
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
+
+/* ── App ────────────────────────────────────────────── */
 
 export default function App() {
   const setScroll = useViewStore((s) => s.setScroll)
   const setMouse = useViewStore((s) => s.setMouse)
+  const [loaded, setLoaded] = useState(false)
 
   const handleScroll = useCallback(() => {
     const scrollHeight = document.documentElement.scrollHeight - window.innerHeight
@@ -58,12 +127,13 @@ export default function App() {
   return (
     <div style={{ position: 'relative', minHeight: '100vh', background: '#0A1628' }}>
       {/* 3D Canvas — persistent fixed background */}
-      <Suspense fallback={<SceneLoader />}>
-        <ThreeScene />
-      </Suspense>
+      <ThreeScene />
+
+      {/* Preloader overlay — blocks until 3D assets are loaded */}
+      <Preloader onComplete={() => setLoaded(true)} />
 
       {/* HTML Overlay — scroll-driven sections */}
-      <div id="html-overlay">
+      <div id="html-overlay" style={{ opacity: loaded ? 1 : 0, transition: 'opacity 0.5s ease' }}>
         <Navbar />
 
         {/* Scroll spacer — drives total scroll length for the narrative */}

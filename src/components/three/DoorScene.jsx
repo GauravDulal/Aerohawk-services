@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react'
+import { useRef, useMemo, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import useViewStore from '../../store/useViewStore'
@@ -291,9 +291,10 @@ function DoorHandle({ side, doorHeight }) {
   const handleMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: new THREE.Color('#D4D4D4'),
-        metalness: 1.0,
-        roughness: 0.05,
+        color: new THREE.Color('#E0E0E0'),
+        metalness: 0.95,
+        roughness: 0.12,
+        envMapIntensity: 1.5,
       }),
     []
   )
@@ -311,7 +312,7 @@ function DoorHandle({ side, doorHeight }) {
       </mesh>
       <mesh position={[0, 0, -0.04]}>
         <boxGeometry args={[0.08, 0.2, 0.015]} />
-        <meshStandardMaterial color="#B8B8B8" metalness={0.9} roughness={0.1} />
+        <meshStandardMaterial color="#C0C0C0" metalness={0.95} roughness={0.12} envMapIntensity={1.5} />
       </mesh>
     </group>
   )
@@ -325,9 +326,10 @@ function AerohawkBadge({ doorHeight }) {
       new THREE.MeshStandardMaterial({
         color: new THREE.Color('#00D4FF'),
         emissive: new THREE.Color('#00D4FF'),
-        emissiveIntensity: 0.6,
-        metalness: 0.8,
-        roughness: 0.2,
+        emissiveIntensity: 0.8,
+        metalness: 0.85,
+        roughness: 0.15,
+        envMapIntensity: 1.2,
       }),
     []
   )
@@ -349,6 +351,7 @@ function AerohawkBadge({ doorHeight }) {
 
 export default function DoorScene() {
   const groupRef = useRef()
+  const [unmounted, setUnmounted] = useState(false)
 
   // SCALED UP dimensions
   const doorWidth = 1.2
@@ -366,14 +369,19 @@ export default function DoorScene() {
     []
   )
   const floorMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: new THREE.Color('#141E30'), roughness: 0.6, metalness: 0.1 }),
+    () => new THREE.MeshStandardMaterial({ color: new THREE.Color('#141E30'), roughness: 0.4, metalness: 0.15, envMapIntensity: 0.4 }),
     []
   )
 
-  // Fade out as camera passes through
+  // Fade out + conditional unmount to free GPU memory
   useFrame(() => {
-    if (!groupRef.current) return
     const { scrollProgress } = useViewStore.getState()
+
+    // Unmount when well past phase A
+    if (scrollProgress > 0.40 && !unmounted) setUnmounted(true)
+    if (scrollProgress <= 0.35 && unmounted) setUnmounted(false)
+
+    if (!groupRef.current) return
     const fade = scrollProgress < 0.28 ? 1 : scrollProgress > 0.35 ? 0 : 1 - (scrollProgress - 0.28) / 0.07
 
     groupRef.current.traverse((child) => {
@@ -384,6 +392,8 @@ export default function DoorScene() {
     })
     groupRef.current.visible = fade > 0.01
   })
+
+  if (unmounted) return null
 
   return (
     <group ref={groupRef} position={[0, 0, 0]}>

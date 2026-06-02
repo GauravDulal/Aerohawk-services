@@ -216,8 +216,9 @@ export default function SunlitRoomScene() {
     () =>
       new THREE.MeshStandardMaterial({
         color: new THREE.Color('#D4A574'),
-        roughness: 0.35,
-        metalness: 0.05,
+        roughness: 0.2,
+        metalness: 0.08,
+        envMapIntensity: 0.4,
       }),
     []
   )
@@ -253,6 +254,7 @@ export default function SunlitRoomScene() {
         transmission: 0.9,
         thickness: 0.3,
         ior: 1.5,
+        envMapIntensity: 1.0,
       }),
     []
   )
@@ -334,7 +336,7 @@ export default function SunlitRoomScene() {
           <meshStandardMaterial
             color="#FFF8E7"
             emissive="#FFF0D4"
-            emissiveIntensity={3}
+            emissiveIntensity={4}
             side={THREE.DoubleSide}
           />
         </mesh>

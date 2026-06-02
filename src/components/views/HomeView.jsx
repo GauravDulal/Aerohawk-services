@@ -102,7 +102,9 @@ export default function HeroSection() {
       </div>
 
       {/* Stats */}
-      <motion.div variants={itemVariants} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '48px', marginTop: '80px' }}>
+      <motion.div variants={itemVariants}
+        className="glass-overlay"
+        style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '48px', marginTop: '80px', padding: '24px 40px', borderRadius: '20px' }}>
         {[
           { value: '500+', label: 'Projects Completed' },
           { value: '99%', label: 'Client Satisfaction' },

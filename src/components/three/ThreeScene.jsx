@@ -1,4 +1,5 @@
 import { Canvas } from '@react-three/fiber'
+import { Environment } from '@react-three/drei'
 import CameraController from './CameraController'
 import DoorScene from './DoorScene'
 import LivingRoomScene from './LivingRoomScene'
@@ -21,6 +22,9 @@ export default function ThreeScene() {
         }}
       >
         <fog attach="fog" args={['#0A1628', 15, 50]} />
+
+        {/* Global PBR environment reflections */}
+        <Environment preset="apartment" />
 
         {/* Camera driven by scroll + mouse */}
         <CameraController />
