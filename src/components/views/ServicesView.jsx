@@ -118,16 +118,20 @@ export default function ServicesSection() {
 
       {/* CTA */}
       <motion.div variants={headerVariants} style={{ marginTop: '64px', textAlign: 'center' }}>
-        <motion.a href="#booking"
+        <motion.button
+          onClick={() => {
+            const scrollHeight = document.documentElement.scrollHeight - window.innerHeight
+            window.scrollTo({ top: scrollHeight * 0.74, behavior: 'smooth' })
+          }}
           style={{
             padding: '16px 32px', borderRadius: '16px', fontSize: '15px', fontWeight: 600,
             fontFamily: 'var(--font-accent)', background: 'linear-gradient(135deg, #00D4FF, #7C3AED)',
-            color: '#fff', textDecoration: 'none', display: 'inline-block',
+            color: '#fff', border: 'none', cursor: 'pointer',
           }}
           whileHover={{ scale: 1.05, boxShadow: '0 0 40px rgba(0, 212, 255, 0.4)' }}
           whileTap={{ scale: 0.95 }}>
           Get Your Free Quote →
-        </motion.a>
+        </motion.button>
       </motion.div>
 
       <style>{`

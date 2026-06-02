@@ -77,27 +77,36 @@ export default function HeroSection() {
 
         {/* CTA */}
         <motion.div variants={itemVariants} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
-          <motion.a href="#booking"
+          <motion.button
             className="animate-pulse-glow"
+            onClick={() => {
+              const scrollHeight = document.documentElement.scrollHeight - window.innerHeight
+              window.scrollTo({ top: scrollHeight * 0.74, behavior: 'smooth' })
+            }}
             style={{
               padding: '16px 32px', borderRadius: '16px', fontSize: '15px', fontWeight: 600,
               fontFamily: 'var(--font-accent)', background: 'linear-gradient(135deg, #00D4FF, #7C3AED)',
-              color: '#fff', textDecoration: 'none', display: 'inline-block',
+              color: '#fff', border: 'none', cursor: 'pointer',
             }}
             whileHover={{ scale: 1.05, boxShadow: '0 0 40px rgba(0, 212, 255, 0.5)' }}
             whileTap={{ scale: 0.95 }}>
             Book Your Service
-          </motion.a>
-          <motion.a href="#services"
+          </motion.button>
+          <motion.button
             className="glass glass-hover"
+            onClick={() => {
+              const scrollHeight = document.documentElement.scrollHeight - window.innerHeight
+              window.scrollTo({ top: scrollHeight * 0.34, behavior: 'smooth' })
+            }}
             style={{
               padding: '16px 32px', borderRadius: '16px', fontSize: '15px', fontWeight: 600,
-              fontFamily: 'var(--font-accent)', color: '#F0F4F8', textDecoration: 'none', display: 'inline-block',
+              fontFamily: 'var(--font-accent)', color: '#F0F4F8', border: 'none', cursor: 'pointer',
+              background: 'transparent',
             }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}>
             Explore Services →
-          </motion.a>
+          </motion.button>
         </motion.div>
       </div>
 
