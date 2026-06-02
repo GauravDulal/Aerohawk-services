@@ -21,7 +21,7 @@ export default function ScrollFadeWrapper({
   const scrollProgress = useViewStore((s) => s.scrollProgress)
 
   const opacity = useMemo(() => {
-    if (scrollProgress <= fadeIn) return 0
+    if (scrollProgress < fadeIn) return 0
     if (scrollProgress >= fadeOut) return 0
     if (scrollProgress >= activeStart && scrollProgress <= activeEnd) return 1
 

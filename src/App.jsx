@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState, Suspense } from 'react'
+import { useEffect, useCallback, useState, useRef } from 'react'
 import { useProgress } from '@react-three/drei'
 import { motion, AnimatePresence } from 'framer-motion'
 import useViewStore from './store/useViewStore'
@@ -14,16 +14,36 @@ import BookingSection from './components/views/BookingView'
 function Preloader({ onComplete }) {
   const { progress, active } = useProgress()
   const [ready, setReady] = useState(false)
+  const hasStartedLoading = useRef(false)
 
   useEffect(() => {
-    if (progress >= 100 && !active) {
+    // Track if loading ever started
+    if (active) hasStartedLoading.current = true
+
+    // Complete when: loading finished, OR nothing to load
+    const isComplete =
+      (progress >= 100 && !active) ||                    // Normal completion
+      (!active && !hasStartedLoading.current && progress === 0)  // Nothing to load
+
+    if (isComplete && !ready) {
       const timer = setTimeout(() => {
         setReady(true)
         onComplete?.()
-      }, 400)
+      }, 300)
       return () => clearTimeout(timer)
     }
-  }, [progress, active, onComplete])
+  }, [progress, active, onComplete, ready])
+
+  // Safety timeout — always clear after 3 seconds no matter what
+  useEffect(() => {
+    const safety = setTimeout(() => {
+      if (!ready) {
+        setReady(true)
+        onComplete?.()
+      }
+    }, 3000)
+    return () => clearTimeout(safety)
+  }, [onComplete, ready])
 
   return (
     <AnimatePresence>
@@ -37,6 +57,7 @@ function Preloader({ onComplete }) {
             position: 'fixed', inset: 0, zIndex: 9999,
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             background: '#0A1628',
+            pointerEvents: ready ? 'none' : 'auto',
           }}
         >
           {/* Logo */}
@@ -63,7 +84,7 @@ function Preloader({ onComplete }) {
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
           }}>
-            {Math.round(progress)}%
+            {Math.round(progress >= 100 ? 100 : progress || 0)}%
           </div>
 
           {/* Progress bar */}
@@ -77,7 +98,7 @@ function Preloader({ onComplete }) {
                 height: '100%', borderRadius: '1px',
                 background: 'linear-gradient(90deg, #00D4FF, #7C3AED)',
               }}
-              animate={{ width: `${progress}%` }}
+              animate={{ width: `${Math.min(progress || 0, 100)}%` }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
             />
           </div>
