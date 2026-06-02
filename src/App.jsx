@@ -74,13 +74,13 @@ export default function App() {
           <HeroSection />
         </ScrollFadeWrapper>
 
-        {/* Services section — visible during living room phase */}
-        <ScrollFadeWrapper fadeIn={0.28} activeStart={0.32} activeEnd={0.48} fadeOut={0.54}>
+        {/* Services section — visible during dirty→clean room phase */}
+        <ScrollFadeWrapper fadeIn={0.30} activeStart={0.34} activeEnd={0.52} fadeOut={0.58}>
           <ServicesSection />
         </ScrollFadeWrapper>
 
-        {/* Booking section — visible during sunlit room phase */}
-        <ScrollFadeWrapper fadeIn={0.64} activeStart={0.70} activeEnd={0.95} fadeOut={1.01}>
+        {/* Booking section — visible during pristine room phase */}
+        <ScrollFadeWrapper fadeIn={0.68} activeStart={0.72} activeEnd={0.95} fadeOut={1.01}>
           <BookingSection />
         </ScrollFadeWrapper>
 

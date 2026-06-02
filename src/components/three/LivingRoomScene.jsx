@@ -4,358 +4,404 @@ import * as THREE from 'three'
 import useViewStore from '../../store/useViewStore'
 
 const DAMP = 4
-const ROOM_Z = -10 // center of the living room along Z
+const ROOM_Z = -10
 
-/* ── Cleaning Drone ──────────────────────────────────── */
+/* ── Mannequin Worker Character ──────────────────────── */
 
-function CleaningDrone() {
-  const droneRef = useRef()
-  const beamRef = useRef()
-  const trailRef = useRef()
+function CleanerCharacter({ position, task, activeRange = [0, 1], facingAngle = 0 }) {
+  const groupRef = useRef()
+  const rUpperArmRef = useRef()
+  const rForearmRef = useRef()
+  const lUpperArmRef = useRef()
+  const lForearmRef = useRef()
+  const torsoRef = useRef()
 
-  const bodyMat = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: new THREE.Color('#1A2332'),
-        roughness: 0.2,
-        metalness: 0.7,
-      }),
+  const skinMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: '#D4A574', roughness: 0.7, metalness: 0.05 }),
     []
   )
-
-  const trimMat = useMemo(
+  const uniformMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: '#2B4A6E', roughness: 0.6, metalness: 0.1 }),
+    []
+  )
+  const bootMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: '#1A1A2E', roughness: 0.7, metalness: 0.15 }),
+    []
+  )
+  const toolMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: '#94A3B8', roughness: 0.3, metalness: 0.6 }),
+    []
+  )
+  const cyanMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: new THREE.Color('#00D4FF'),
-        emissive: new THREE.Color('#00D4FF'),
-        emissiveIntensity: 0.8,
+        color: '#00D4FF',
+        emissive: '#00D4FF',
+        emissiveIntensity: 0.3,
         metalness: 0.5,
-        roughness: 0.2,
+        roughness: 0.3,
       }),
     []
   )
 
-  const beamMat = useMemo(
+  useFrame((state, delta) => {
+    if (!groupRef.current) return
+    const { cleanProgress, scrollProgress } = useViewStore.getState()
+    const t = state.clock.elapsedTime
+
+    // Worker visibility based on active range
+    const workerActive =
+      cleanProgress >= activeRange[0] && cleanProgress <= activeRange[1]
+    const fadeIn = cleanProgress < activeRange[0] + 0.05
+      ? Math.max(0, (cleanProgress - activeRange[0]) / 0.05)
+      : 1
+    const fadeOut = cleanProgress > activeRange[1] - 0.1
+      ? Math.max(0, (activeRange[1] - cleanProgress) / 0.1)
+      : 1
+    const roomFade = scrollProgress > 0.62
+      ? Math.max(0, 1 - (scrollProgress - 0.62) / 0.08)
+      : scrollProgress < 0.22
+        ? 0
+        : scrollProgress < 0.28
+          ? (scrollProgress - 0.22) / 0.06
+          : 1
+
+    const opacity = Math.min(fadeIn, fadeOut, roomFade)
+
+    groupRef.current.traverse((child) => {
+      if (child.isMesh && child.material) {
+        child.material.transparent = true
+        child.material.opacity = opacity
+      }
+    })
+    groupRef.current.visible = opacity > 0.01
+
+    // Animate based on task
+    if (task === 'wipe') {
+      // Wiping motion: right arm sweeps left-right
+      if (rUpperArmRef.current) {
+        rUpperArmRef.current.rotation.x = -1.2 + Math.sin(t * 3) * 0.15
+        rUpperArmRef.current.rotation.z = Math.sin(t * 3) * 0.4
+      }
+      if (rForearmRef.current) {
+        rForearmRef.current.rotation.x = -0.3
+      }
+      if (torsoRef.current) {
+        torsoRef.current.rotation.z = Math.sin(t * 3) * 0.05
+      }
+    } else if (task === 'vacuum') {
+      // Vacuuming: both arms extended, push/pull
+      const pushPull = Math.sin(t * 2) * 0.25
+      if (rUpperArmRef.current) {
+        rUpperArmRef.current.rotation.x = -0.9 + pushPull * 0.15
+      }
+      if (lUpperArmRef.current) {
+        lUpperArmRef.current.rotation.x = -0.9 + pushPull * 0.15
+      }
+      if (rForearmRef.current) rForearmRef.current.rotation.x = -0.4
+      if (lForearmRef.current) lForearmRef.current.rotation.x = -0.4
+      if (torsoRef.current) {
+        torsoRef.current.rotation.x = -0.1 + pushPull * 0.03
+      }
+    } else if (task === 'dust') {
+      // Dusting: right arm reaches up cyclically
+      if (rUpperArmRef.current) {
+        rUpperArmRef.current.rotation.x = -2.5 + Math.sin(t * 2.5) * 0.3
+        rUpperArmRef.current.rotation.z = 0.2
+      }
+      if (rForearmRef.current) {
+        rForearmRef.current.rotation.x = -0.5 + Math.sin(t * 2.5 + 0.5) * 0.2
+      }
+      if (torsoRef.current) {
+        torsoRef.current.rotation.z = 0.05
+      }
+    }
+  })
+
+  return (
+    <group ref={groupRef} position={position} rotation={[0, facingAngle, 0]}>
+      {/* Legs */}
+      {[-0.1, 0.1].map((xOff, i) => (
+        <group key={i} position={[xOff, 0.45, 0]}>
+          <mesh material={uniformMat} castShadow>
+            <capsuleGeometry args={[0.055, 0.32, 6, 10]} />
+          </mesh>
+          <mesh position={[0, -0.38, 0]} material={uniformMat} castShadow>
+            <capsuleGeometry args={[0.05, 0.28, 6, 10]} />
+          </mesh>
+          <mesh position={[0, -0.68, 0.03]} material={bootMat} castShadow>
+            <boxGeometry args={[0.11, 0.09, 0.16]} />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Torso */}
+      <group ref={torsoRef} position={[0, 0.92, 0]}>
+        <mesh material={uniformMat} castShadow>
+          <capsuleGeometry args={[0.13, 0.32, 6, 12]} />
+        </mesh>
+        {/* Badge */}
+        <mesh position={[-0.07, 0.04, 0.13]} material={cyanMat}>
+          <boxGeometry args={[0.05, 0.05, 0.006]} />
+        </mesh>
+
+        {/* Head */}
+        <group position={[0, 0.35, 0]}>
+          <mesh position={[0, -0.07, 0]} material={skinMat}>
+            <cylinderGeometry args={[0.035, 0.045, 0.09, 8]} />
+          </mesh>
+          <mesh position={[0, 0.07, 0]} material={skinMat} castShadow>
+            <sphereGeometry args={[0.09, 12, 12]} />
+          </mesh>
+          <mesh position={[0, 0.13, 0]} material={uniformMat}>
+            <sphereGeometry args={[0.095, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          </mesh>
+        </group>
+
+        {/* Left Arm */}
+        <group position={[-0.18, 0.1, 0]} ref={lUpperArmRef}>
+          <mesh material={uniformMat} castShadow>
+            <capsuleGeometry args={[0.035, 0.22, 6, 10]} />
+          </mesh>
+          <group position={[0, -0.18, 0]} ref={lForearmRef}>
+            <mesh material={uniformMat} castShadow>
+              <capsuleGeometry args={[0.03, 0.18, 6, 10]} />
+            </mesh>
+            <mesh position={[0, -0.16, 0]} material={skinMat}>
+              <boxGeometry args={[0.04, 0.05, 0.025]} />
+            </mesh>
+          </group>
+        </group>
+
+        {/* Right Arm */}
+        <group position={[0.18, 0.1, 0]} ref={rUpperArmRef}>
+          <mesh material={uniformMat} castShadow>
+            <capsuleGeometry args={[0.035, 0.22, 6, 10]} />
+          </mesh>
+          <group position={[0, -0.18, 0]} ref={rForearmRef}>
+            <mesh material={uniformMat} castShadow>
+              <capsuleGeometry args={[0.03, 0.18, 6, 10]} />
+            </mesh>
+            <mesh position={[0, -0.16, 0]} material={skinMat}>
+              <boxGeometry args={[0.04, 0.05, 0.025]} />
+            </mesh>
+
+            {/* Tool based on task */}
+            {task === 'wipe' && (
+              <mesh position={[0, -0.22, 0.02]} material={toolMat}>
+                <boxGeometry args={[0.15, 0.02, 0.1]} />
+              </mesh>
+            )}
+            {task === 'dust' && (
+              <group position={[0, -0.22, 0]}>
+                <mesh material={toolMat}>
+                  <cylinderGeometry args={[0.01, 0.01, 0.4, 6]} />
+                </mesh>
+                <mesh position={[0, 0.22, 0]}>
+                  <sphereGeometry args={[0.06, 8, 8]} />
+                  <meshStandardMaterial color="#FFD700" roughness={0.9} />
+                </mesh>
+              </group>
+            )}
+          </group>
+        </group>
+
+        {/* Vacuum tool — attached to body, not arm */}
+        {task === 'vacuum' && (
+          <group position={[0, -0.65, 0.5]}>
+            {/* Handle */}
+            <mesh rotation={[0.3, 0, 0]} material={toolMat}>
+              <cylinderGeometry args={[0.015, 0.015, 0.8, 8]} />
+            </mesh>
+            {/* Head */}
+            <mesh position={[0, -0.35, 0.15]} material={toolMat}>
+              <boxGeometry args={[0.25, 0.06, 0.15]} />
+            </mesh>
+          </group>
+        )}
+      </group>
+    </group>
+  )
+}
+
+/* ── Dirty Overlay Elements ──────────────────────────── */
+
+function DirtyOverlays() {
+  const groupRef = useRef()
+
+  const dustMat = useMemo(
     () =>
       new THREE.MeshBasicMaterial({
-        color: new THREE.Color('#00D4FF'),
+        color: new THREE.Color('#8B7355'),
         transparent: true,
-        opacity: 0.25,
-        blending: THREE.AdditiveBlending,
-        side: THREE.DoubleSide,
-      }),
-    []
-  )
-
-  const trailMat = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        uniforms: {
-          uTime: { value: 0 },
-          uColor: { value: new THREE.Color('#00D4FF') },
-        },
-        vertexShader: `
-          varying vec2 vUv;
-          void main() {
-            vUv = uv;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-          }
-        `,
-        fragmentShader: `
-          uniform float uTime;
-          uniform vec3 uColor;
-          varying vec2 vUv;
-          void main() {
-            float alpha = smoothstep(1.0, 0.0, vUv.x) * 0.4;
-            alpha *= sin(vUv.y * 6.2832 + uTime * 3.0) * 0.3 + 0.7;
-            alpha *= smoothstep(0.0, 0.1, vUv.y) * smoothstep(1.0, 0.9, vUv.y);
-            gl_FragColor = vec4(uColor, alpha);
-          }
-        `,
-        transparent: true,
-        blending: THREE.AdditiveBlending,
+        opacity: 0.12,
         side: THREE.DoubleSide,
         depthWrite: false,
       }),
     []
   )
 
-  // Rotor refs
-  const rotorRefs = [useRef(), useRef(), useRef(), useRef()]
-  const rotorPositions = [
-    [0.35, 0.08, 0.2],
-    [-0.35, 0.08, 0.2],
-    [0.35, 0.08, -0.2],
-    [-0.35, 0.08, -0.2],
-  ]
+  const stainMat = useMemo(
+    () =>
+      new THREE.MeshBasicMaterial({
+        color: new THREE.Color('#3D2B1F'),
+        transparent: true,
+        opacity: 0.25,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+      }),
+    []
+  )
 
-  useFrame((state) => {
-    if (!droneRef.current) return
-    const t = state.clock.elapsedTime
-    const { scrollProgress } = useViewStore.getState()
+  // Scattered items with staggered fade thresholds
+  const scatteredItems = useMemo(
+    () => [
+      { pos: [1.5, 0.05, ROOM_Z + 1.5], size: [0.1, 0.12, 0.1], fadeAt: 0.1, type: 'cup' },
+      { pos: [-0.5, 0.02, ROOM_Z + 2], size: [0.2, 0.01, 0.15], fadeAt: 0.2, type: 'paper' },
+      { pos: [0.8, 0.04, ROOM_Z - 0.5], size: [0.15, 0.08, 0.25], fadeAt: 0.3, type: 'shoe' },
+      { pos: [-1.8, 0.03, ROOM_Z + 1.8], size: [0.18, 0.01, 0.12], fadeAt: 0.4, type: 'paper' },
+      { pos: [2, 0.05, ROOM_Z + 0.5], size: [0.08, 0.15, 0.08], fadeAt: 0.5, type: 'cup' },
+      { pos: [-0.3, 0.02, ROOM_Z - 1], size: [0.12, 0.01, 0.18], fadeAt: 0.6, type: 'paper' },
+      { pos: [1.2, 0.04, ROOM_Z - 1.5], size: [0.15, 0.08, 0.22], fadeAt: 0.7, type: 'shoe' },
+      { pos: [-2.5, 0.05, ROOM_Z - 0.3], size: [0.1, 0.1, 0.1], fadeAt: 0.8, type: 'cup' },
+    ],
+    []
+  )
 
-    // Drone sweeps across the glass partition
-    const sweepRange = 2.5
-    const sweepX = Math.sin(t * 0.6) * sweepRange
-    const bobY = 1.8 + Math.sin(t * 1.5) * 0.08
-    const droneZ = ROOM_Z - 1.5
+  const itemMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: '#6B5B4F', roughness: 0.8, metalness: 0.05, transparent: true }),
+    []
+  )
 
-    droneRef.current.position.set(sweepX, bobY, droneZ)
-    droneRef.current.rotation.z = Math.sin(t * 0.8) * 0.03
-    droneRef.current.rotation.x = Math.cos(t * 0.5) * 0.02
+  useFrame(() => {
+    if (!groupRef.current) return
+    const { cleanProgress, scrollProgress } = useViewStore.getState()
 
-    // Spin rotors
-    rotorRefs.forEach((r) => {
-      if (r.current) r.current.rotation.y = t * 15
-    })
-
-    // Beam pulse
-    if (beamRef.current) {
-      beamRef.current.material.opacity = 0.15 + Math.sin(t * 4) * 0.1
-    }
-
-    // Trail shader time
-    if (trailRef.current) {
-      trailMat.uniforms.uTime.value = t
-    }
-
-    // Fade drone visibility based on phase
-    const fade =
-      scrollProgress < 0.22
+    const roomFade = scrollProgress > 0.62
+      ? Math.max(0, 1 - (scrollProgress - 0.62) / 0.08)
+      : scrollProgress < 0.22
         ? 0
         : scrollProgress < 0.28
           ? (scrollProgress - 0.22) / 0.06
-          : scrollProgress > 0.62
-            ? Math.max(0, 1 - (scrollProgress - 0.62) / 0.08)
-            : 1
+          : 1
 
-    droneRef.current.traverse((child) => {
-      if (child.isMesh && child.material) {
-        child.material.transparent = true
-        child.material.opacity =
-          child.material === beamMat
-            ? fade * (0.15 + Math.sin(t * 4) * 0.1)
-            : child.material === trailMat
-              ? fade
-              : fade
+    // Dust layers
+    dustMat.opacity = 0.12 * (1 - cleanProgress) * roomFade
+    stainMat.opacity = 0.25 * Math.max(0, 1 - (cleanProgress - 0.4) / 0.4) * roomFade
+
+    // Scattered items
+    groupRef.current.children.forEach((child) => {
+      if (child.userData.fadeAt !== undefined) {
+        const fadeRange = 0.15
+        const itemFade =
+          cleanProgress < child.userData.fadeAt
+            ? 1
+            : cleanProgress > child.userData.fadeAt + fadeRange
+              ? 0
+              : 1 - (cleanProgress - child.userData.fadeAt) / fadeRange
+        child.visible = itemFade * roomFade > 0.01
+        child.traverse((c) => {
+          if (c.isMesh && c.material) {
+            c.material.transparent = true
+            c.material.opacity = itemFade * roomFade
+          }
+        })
       }
     })
-    droneRef.current.visible = fade > 0.01
+
+    groupRef.current.visible = roomFade > 0.01
   })
 
   return (
-    <group ref={droneRef}>
-      {/* Body — sleek ellipsoid */}
-      <mesh scale={[0.5, 0.15, 0.3]} material={bodyMat} castShadow>
-        <sphereGeometry args={[1, 24, 16]} />
+    <group ref={groupRef}>
+      {/* Dust layers on furniture surfaces */}
+      <mesh position={[-2, 0.56, ROOM_Z + 0.5]} rotation={[-Math.PI / 2, 0, 0]} material={dustMat}>
+        <planeGeometry args={[2.0, 0.8]} />
+      </mesh>
+      <mesh position={[0, 0.44, ROOM_Z + 0.5]} rotation={[-Math.PI / 2, 0, 0]} material={dustMat}>
+        <planeGeometry args={[1.1, 0.5]} />
+      </mesh>
+      <mesh position={[0, -0.02, ROOM_Z - 0.5]} rotation={[-Math.PI / 2, 0, 0]} material={dustMat}>
+        <planeGeometry args={[3, 3]} />
       </mesh>
 
-      {/* Trim ring */}
-      <mesh rotation={[Math.PI / 2, 0, 0]} castShadow>
-        <torusGeometry args={[0.38, 0.015, 8, 32]} />
-        <primitive object={trimMat} attach="material" />
+      {/* Stain near coffee table */}
+      <mesh position={[0.3, -0.02, ROOM_Z + 1.2]} rotation={[-Math.PI / 2, 0, 0]} material={stainMat}>
+        <circleGeometry args={[0.3, 16]} />
       </mesh>
 
-      {/* Rotors */}
-      {rotorPositions.map((pos, i) => (
-        <group key={i} position={pos}>
-          {/* Rotor arm */}
-          <mesh>
-            <cylinderGeometry args={[0.008, 0.008, 0.05, 8]} />
-            <meshStandardMaterial color="#2D3748" metalness={0.5} roughness={0.3} />
-          </mesh>
-          {/* Rotor disc */}
-          <mesh ref={rotorRefs[i]} position={[0, 0.04, 0]}>
-            <cylinderGeometry args={[0.1, 0.1, 0.005, 16]} />
-            <meshStandardMaterial
-              color="#94A3B8"
-              metalness={0.6}
-              roughness={0.2}
-              transparent
-              opacity={0.5}
-            />
-          </mesh>
+      {/* Cobweb in corner */}
+      <mesh position={[-4.9, 2.8, ROOM_Z - 4.8]}>
+        <planeGeometry args={[0.6, 0.6]} />
+        <meshBasicMaterial
+          color="#CCCCCC"
+          transparent
+          opacity={0.08 * 1}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+        />
+      </mesh>
+
+      {/* Scattered items */}
+      {scatteredItems.map((item, i) => (
+        <group key={i} position={item.pos} userData={{ fadeAt: item.fadeAt }}>
+          {item.type === 'cup' && (
+            <mesh material={itemMat} castShadow>
+              <cylinderGeometry args={[item.size[0] / 2, item.size[0] / 2.5, item.size[1], 8]} />
+            </mesh>
+          )}
+          {item.type === 'paper' && (
+            <mesh rotation={[-Math.PI / 2, 0, Math.random() * 2]} material={itemMat}>
+              <planeGeometry args={[item.size[0], item.size[2]]} />
+            </mesh>
+          )}
+          {item.type === 'shoe' && (
+            <mesh material={itemMat} castShadow>
+              <boxGeometry args={item.size} />
+            </mesh>
+          )}
         </group>
       ))}
-
-      {/* Cleaning beam — cone pointing down */}
-      <mesh ref={beamRef} position={[0, -0.5, 0]} material={beamMat}>
-        <coneGeometry args={[0.6, 1.0, 16, 1, true]} />
-      </mesh>
-
-      {/* Glowing trail plane behind drone */}
-      <mesh
-        ref={trailRef}
-        position={[-0.8, 0, 0]}
-        rotation={[0, 0, 0]}
-        material={trailMat}
-      >
-        <planeGeometry args={[1.5, 0.3]} />
-      </mesh>
-
-      {/* Drone light emitting downward */}
-      <pointLight
-        position={[0, -0.3, 0]}
-        color="#00D4FF"
-        intensity={2}
-        distance={4}
-        decay={2}
-      />
     </group>
   )
 }
 
-/* ── Glass Partition ─────────────────────────────────── */
-
-function GlassPartition() {
-  const glassRef = useRef()
-  const flashRef = useRef()
-
-  const glassMat = useMemo(
-    () =>
-      new THREE.MeshPhysicalMaterial({
-        color: new THREE.Color('#FFFFFF'),
-        roughness: 0.05,
-        metalness: 0.0,
-        transparent: true,
-        opacity: 0.15,
-        transmission: 0.85,
-        thickness: 0.5,
-        ior: 1.5,
-        side: THREE.DoubleSide,
-      }),
-    []
-  )
-
-  useFrame((_, delta) => {
-    if (!glassRef.current) return
-    const { glassWipeProgress, scrollProgress } = useViewStore.getState()
-
-    // Wipe the glass as progress increases
-    glassMat.opacity = THREE.MathUtils.damp(
-      glassMat.opacity,
-      0.15 * (1 - glassWipeProgress),
-      DAMP,
-      delta
-    )
-    glassMat.transmission = THREE.MathUtils.damp(
-      glassMat.transmission,
-      0.85 + glassWipeProgress * 0.15,
-      DAMP,
-      delta
-    )
-
-    // Flash effect at the wipe moment
-    if (flashRef.current) {
-      const flashIntensity =
-        glassWipeProgress > 0.3 && glassWipeProgress < 0.8
-          ? Math.sin((glassWipeProgress - 0.3) * Math.PI / 0.5) * 5
-          : 0
-      flashRef.current.intensity = flashIntensity
-    }
-
-    // Hide completely after wipe
-    glassRef.current.visible = scrollProgress < 0.65
-  })
-
-  return (
-    <group position={[0, 1.3, ROOM_Z - 3]}>
-      <mesh ref={glassRef} material={glassMat} receiveShadow>
-        <planeGeometry args={[5, 2.8]} />
-      </mesh>
-
-      {/* Glass edges — thin frame */}
-      <mesh position={[0, 1.42, 0]}>
-        <boxGeometry args={[5.1, 0.04, 0.02]} />
-        <meshStandardMaterial color="#94A3B8" metalness={0.7} roughness={0.2} />
-      </mesh>
-      <mesh position={[0, -0.02, 0]}>
-        <boxGeometry args={[5.1, 0.04, 0.02]} />
-        <meshStandardMaterial color="#94A3B8" metalness={0.7} roughness={0.2} />
-      </mesh>
-
-      {/* Flash light for the wipe moment */}
-      <pointLight
-        ref={flashRef}
-        position={[0, 0, 0.5]}
-        color="#FFFFFF"
-        intensity={0}
-        distance={8}
-        decay={2}
-      />
-    </group>
-  )
-}
-
-/* ── Furniture ───────────────────────────────────────── */
+/* ── Furniture (kept from original) ──────────────────── */
 
 function Sofa() {
   const sofaMat = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: new THREE.Color('#1A2940'),
-        roughness: 0.8,
-        metalness: 0.05,
-      }),
+    () => new THREE.MeshStandardMaterial({ color: new THREE.Color('#1A2940'), roughness: 0.8, metalness: 0.05 }),
     []
   )
-
   return (
     <group position={[-2, 0.35, ROOM_Z + 0.5]}>
-      {/* Seat */}
-      <mesh material={sofaMat} castShadow receiveShadow>
-        <boxGeometry args={[2.2, 0.35, 0.9]} />
-      </mesh>
-      {/* Back */}
-      <mesh position={[0, 0.35, -0.35]} material={sofaMat} castShadow>
-        <boxGeometry args={[2.2, 0.4, 0.2]} />
-      </mesh>
-      {/* Left arm */}
-      <mesh position={[-1.0, 0.18, 0]} material={sofaMat} castShadow>
-        <boxGeometry args={[0.2, 0.55, 0.9]} />
-      </mesh>
-      {/* Right arm */}
-      <mesh position={[1.0, 0.18, 0]} material={sofaMat} castShadow>
-        <boxGeometry args={[0.2, 0.55, 0.9]} />
-      </mesh>
+      <mesh material={sofaMat} castShadow receiveShadow><boxGeometry args={[2.2, 0.35, 0.9]} /></mesh>
+      <mesh position={[0, 0.35, -0.35]} material={sofaMat} castShadow><boxGeometry args={[2.2, 0.4, 0.2]} /></mesh>
+      <mesh position={[-1.0, 0.18, 0]} material={sofaMat} castShadow><boxGeometry args={[0.2, 0.55, 0.9]} /></mesh>
+      <mesh position={[1.0, 0.18, 0]} material={sofaMat} castShadow><boxGeometry args={[0.2, 0.55, 0.9]} /></mesh>
     </group>
   )
 }
 
 function CoffeeTable() {
   const tableMat = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: new THREE.Color('#2D3748'),
-        roughness: 0.3,
-        metalness: 0.2,
-      }),
+    () => new THREE.MeshStandardMaterial({ color: new THREE.Color('#2D3748'), roughness: 0.3, metalness: 0.2 }),
     []
   )
   const legMat = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: new THREE.Color('#94A3B8'),
-        roughness: 0.2,
-        metalness: 0.8,
-      }),
+    () => new THREE.MeshStandardMaterial({ color: new THREE.Color('#94A3B8'), roughness: 0.2, metalness: 0.8 }),
     []
   )
-
   return (
     <group position={[0, 0, ROOM_Z + 0.5]}>
-      {/* Top */}
       <mesh position={[0, 0.4, 0]} material={tableMat} castShadow receiveShadow>
         <boxGeometry args={[1.2, 0.04, 0.6]} />
       </mesh>
-      {/* Legs */}
-      {[[-0.5, 0.2, -0.22], [0.5, 0.2, -0.22], [-0.5, 0.2, 0.22], [0.5, 0.2, 0.22]].map(
-        (pos, i) => (
-          <mesh key={i} position={pos} material={legMat}>
-            <cylinderGeometry args={[0.015, 0.015, 0.38, 8]} />
-          </mesh>
-        )
-      )}
+      {[[-0.5, 0.2, -0.22], [0.5, 0.2, -0.22], [-0.5, 0.2, 0.22], [0.5, 0.2, 0.22]].map((pos, i) => (
+        <mesh key={i} position={pos} material={legMat}>
+          <cylinderGeometry args={[0.015, 0.015, 0.38, 8]} />
+        </mesh>
+      ))}
     </group>
   )
 }
@@ -363,33 +409,55 @@ function CoffeeTable() {
 function FloorLamp() {
   return (
     <group position={[2.5, 0, ROOM_Z - 0.5]}>
-      {/* Pole */}
       <mesh position={[0, 1, 0]}>
         <cylinderGeometry args={[0.015, 0.02, 2, 8]} />
         <meshStandardMaterial color="#94A3B8" metalness={0.6} roughness={0.3} />
       </mesh>
-      {/* Base */}
       <mesh position={[0, 0.02, 0]}>
         <cylinderGeometry args={[0.15, 0.15, 0.04, 16]} />
         <meshStandardMaterial color="#1A2940" roughness={0.5} metalness={0.3} />
       </mesh>
-      {/* Head — emissive sphere */}
       <mesh position={[0, 2.05, 0]}>
         <sphereGeometry args={[0.12, 16, 16]} />
-        <meshStandardMaterial
-          color="#FFF8E7"
-          emissive="#FFF0D4"
-          emissiveIntensity={1.5}
-        />
+        <meshStandardMaterial color="#FFF8E7" emissive="#FFF0D4" emissiveIntensity={1.5} />
       </mesh>
-      {/* Light source */}
-      <pointLight
-        position={[0, 2.05, 0]}
-        color="#FFF0D4"
-        intensity={2}
-        distance={6}
-        decay={2}
-      />
+      <pointLight position={[0, 2.05, 0]} color="#FFF0D4" intensity={2} distance={6} decay={2} />
+    </group>
+  )
+}
+
+/* ── Hallway Partition with Archway ──────────────────── */
+
+function HallwayPartition() {
+  const wallMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: new THREE.Color('#1E293B'), roughness: 0.9, metalness: 0.0 }),
+    []
+  )
+  const archZ = ROOM_Z - 5
+
+  return (
+    <group>
+      {/* Left wall section */}
+      <mesh position={[-3.5, 1.5, archZ]} material={wallMat} receiveShadow>
+        <boxGeometry args={[5, 3.2, 0.2]} />
+      </mesh>
+      {/* Right wall section */}
+      <mesh position={[3.5, 1.5, archZ]} material={wallMat} receiveShadow>
+        <boxGeometry args={[5, 3.2, 0.2]} />
+      </mesh>
+      {/* Top section above archway */}
+      <mesh position={[0, 2.8, archZ]} material={wallMat} receiveShadow>
+        <boxGeometry args={[2, 0.6, 0.2]} />
+      </mesh>
+      {/* Arch trim */}
+      <mesh position={[-1, 1.25, archZ - 0.11]}>
+        <boxGeometry args={[0.06, 2.5, 0.02]} />
+        <meshStandardMaterial color="#00D4FF" emissive="#00D4FF" emissiveIntensity={0.2} />
+      </mesh>
+      <mesh position={[1, 1.25, archZ - 0.11]}>
+        <boxGeometry args={[0.06, 2.5, 0.02]} />
+        <meshStandardMaterial color="#00D4FF" emissive="#00D4FF" emissiveIntensity={0.2} />
+      </mesh>
     </group>
   )
 }
@@ -400,44 +468,31 @@ export default function LivingRoomScene() {
   const groupRef = useRef()
 
   const floorMat = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: new THREE.Color('#A0A0A0'),
-        roughness: 0.15,
-        metalness: 0.2,
-      }),
+    () => new THREE.MeshStandardMaterial({ color: new THREE.Color('#A0A0A0'), roughness: 0.15, metalness: 0.2 }),
     []
   )
-
   const wallMat = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: new THREE.Color('#1E293B'),
-        roughness: 0.9,
-        metalness: 0.0,
-      }),
+    () => new THREE.MeshStandardMaterial({ color: new THREE.Color('#1E293B'), roughness: 0.9, metalness: 0.0 }),
     []
   )
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     if (!groupRef.current) return
-    const { scrollProgress } = useViewStore.getState()
+    const { scrollProgress, cleanProgress } = useViewStore.getState()
 
-    // Visible from scroll 0.15 to 0.70
-    const fade =
-      scrollProgress < 0.15
-        ? 0
-        : scrollProgress < 0.22
-          ? (scrollProgress - 0.15) / 0.07
-          : scrollProgress > 0.65
-            ? Math.max(0, 1 - (scrollProgress - 0.65) / 0.07)
-            : 1
+    const fade = scrollProgress < 0.15 ? 0
+      : scrollProgress < 0.22 ? (scrollProgress - 0.15) / 0.07
+      : scrollProgress > 0.68 ? Math.max(0, 1 - (scrollProgress - 0.68) / 0.07)
+      : 1
+
+    // Walls get slightly brighter as room cleans
+    const wallBrightness = 0.11 + cleanProgress * 0.04
+    wallMat.color.setRGB(wallBrightness, wallBrightness * 1.15, wallBrightness * 1.35)
 
     groupRef.current.traverse((child) => {
-      if (child.isMesh && child.material && !child.userData.skipFade) {
-        child.material.transparent = true
-        // Don't override glass opacity (handled separately)
+      if (child.isMesh && child.material && !child.userData.fadeAt && child.userData.skipRoomFade !== true) {
         if (child.material.transmission === undefined || child.material.transmission < 0.5) {
+          child.material.transparent = true
           child.material.opacity = fade
         }
       }
@@ -446,47 +501,25 @@ export default function LivingRoomScene() {
   })
 
   return (
-    <group ref={groupRef} position={[0, 0, 0]}>
+    <group ref={groupRef}>
       {/* Floor */}
-      <mesh
-        position={[0, -0.04, ROOM_Z]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        material={floorMat}
-        receiveShadow
-      >
+      <mesh position={[0, -0.04, ROOM_Z]} rotation={[-Math.PI / 2, 0, 0]} material={floorMat} receiveShadow>
         <planeGeometry args={[12, 14]} />
       </mesh>
 
-      {/* Back wall */}
-      <mesh position={[0, 1.5, ROOM_Z - 5]} material={wallMat} receiveShadow>
-        <planeGeometry args={[12, 4]} />
+      {/* Walls */}
+      <mesh position={[0, 1.5, ROOM_Z - 5.1]} material={wallMat} receiveShadow>
+        <planeGeometry args={[12, 3.4]} />
       </mesh>
-
-      {/* Left wall */}
-      <mesh
-        position={[-5, 1.5, ROOM_Z]}
-        rotation={[0, Math.PI / 2, 0]}
-        material={wallMat}
-        receiveShadow
-      >
-        <planeGeometry args={[14, 4]} />
+      <mesh position={[-5, 1.5, ROOM_Z]} rotation={[0, Math.PI / 2, 0]} material={wallMat} receiveShadow>
+        <planeGeometry args={[14, 3.4]} />
       </mesh>
-
-      {/* Right wall */}
-      <mesh
-        position={[5, 1.5, ROOM_Z]}
-        rotation={[0, -Math.PI / 2, 0]}
-        material={wallMat}
-        receiveShadow
-      >
-        <planeGeometry args={[14, 4]} />
+      <mesh position={[5, 1.5, ROOM_Z]} rotation={[0, -Math.PI / 2, 0]} material={wallMat} receiveShadow>
+        <planeGeometry args={[14, 3.4]} />
       </mesh>
 
       {/* Ceiling */}
-      <mesh
-        position={[0, 3.2, ROOM_Z]}
-        rotation={[Math.PI / 2, 0, 0]}
-      >
+      <mesh position={[0, 3.2, ROOM_Z]} rotation={[Math.PI / 2, 0, 0]}>
         <planeGeometry args={[12, 14]} />
         <meshStandardMaterial color="#0F1D32" roughness={0.95} />
       </mesh>
@@ -496,23 +529,35 @@ export default function LivingRoomScene() {
       <CoffeeTable />
       <FloorLamp />
 
-      {/* Glass Partition */}
-      <GlassPartition />
+      {/* Hallway partition with archway */}
+      <HallwayPartition />
 
-      {/* Cleaning Drone */}
-      <CleaningDrone />
+      {/* Dirty overlay elements */}
+      <DirtyOverlays />
 
-      {/* Ambient fill light */}
-      <ambientLight intensity={0.15} color="#E2E8F0" />
-
-      {/* Cool overhead wash */}
-      <pointLight
-        position={[0, 3, ROOM_Z]}
-        color="#C8D8FF"
-        intensity={1.5}
-        distance={10}
-        decay={2}
+      {/* Worker characters */}
+      <CleanerCharacter
+        position={[-1.5, 0, ROOM_Z + 2]}
+        task="wipe"
+        activeRange={[0.0, 0.6]}
+        facingAngle={Math.PI}
       />
+      <CleanerCharacter
+        position={[1, 0, ROOM_Z - 0.5]}
+        task="vacuum"
+        activeRange={[0.1, 0.8]}
+        facingAngle={-Math.PI / 4}
+      />
+      <CleanerCharacter
+        position={[2, 0, ROOM_Z - 2]}
+        task="dust"
+        activeRange={[0.2, 0.9]}
+        facingAngle={-Math.PI / 2}
+      />
+
+      {/* Lighting */}
+      <ambientLight intensity={0.15} color="#E2E8F0" />
+      <pointLight position={[0, 3, ROOM_Z]} color="#C8D8FF" intensity={1.5} distance={10} decay={2} />
     </group>
   )
 }

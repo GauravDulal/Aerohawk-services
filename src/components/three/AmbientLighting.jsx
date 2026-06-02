@@ -31,9 +31,9 @@ function getPhaseBlend(scrollProgress) {
   if (scrollProgress <= 0.25) return { from: 'hero', to: 'hero', t: 0 }
   if (scrollProgress <= 0.30)
     return { from: 'hero', to: 'service', t: (scrollProgress - 0.25) / 0.05 }
-  if (scrollProgress <= 0.60) return { from: 'service', to: 'service', t: 0 }
-  if (scrollProgress <= 0.65)
-    return { from: 'service', to: 'result', t: (scrollProgress - 0.60) / 0.05 }
+  if (scrollProgress <= 0.65) return { from: 'service', to: 'service', t: 0 }
+  if (scrollProgress <= 0.70)
+    return { from: 'service', to: 'result', t: (scrollProgress - 0.65) / 0.05 }
   return { from: 'result', to: 'result', t: 0 }
 }
 

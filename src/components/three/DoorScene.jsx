@@ -5,11 +5,229 @@ import useViewStore from '../../store/useViewStore'
 
 const DAMP = 4
 
-/* ── helpers ─────────────────────────────────────────── */
+/* ── Mannequin Character ─────────────────────────────── */
+
+function DoorCharacter() {
+  const groupRef = useRef()
+  const rUpperArmRef = useRef()
+  const rForearmRef = useRef()
+  const rHandRef = useRef()
+  const torsoRef = useRef()
+  const bodyRef = useRef()
+
+  const skinMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: '#D4A574', roughness: 0.7, metalness: 0.05 }),
+    []
+  )
+  const uniformMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: '#1A2940', roughness: 0.6, metalness: 0.1 }),
+    []
+  )
+  const bootMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: '#1A1A2E', roughness: 0.7, metalness: 0.15 }),
+    []
+  )
+  const badgeMat = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: '#00D4FF',
+        emissive: '#00D4FF',
+        emissiveIntensity: 0.4,
+        metalness: 0.5,
+        roughness: 0.3,
+      }),
+    []
+  )
+
+  useFrame((state, delta) => {
+    if (!groupRef.current) return
+    const { characterReachProgress, doorProgress, scrollProgress } = useViewStore.getState()
+    const t = state.clock.elapsedTime
+
+    // Idle body sway when not reaching
+    const idleSway = (1 - characterReachProgress) * Math.sin(t * 1.2) * 0.015
+
+    // Torso leans slightly toward door during reach
+    if (torsoRef.current) {
+      const targetLean = characterReachProgress * -0.08 + doorProgress * -0.12
+      torsoRef.current.rotation.z = THREE.MathUtils.damp(
+        torsoRef.current.rotation.z,
+        targetLean + idleSway,
+        DAMP,
+        delta
+      )
+    }
+
+    // Right upper arm — reaches forward
+    if (rUpperArmRef.current) {
+      // Pitch forward (rotate around X to extend arm forward)
+      const targetPitch = characterReachProgress * -1.3 + doorProgress * -0.3
+      rUpperArmRef.current.rotation.x = THREE.MathUtils.damp(
+        rUpperArmRef.current.rotation.x,
+        targetPitch,
+        DAMP,
+        delta
+      )
+      // Slight outward rotation
+      rUpperArmRef.current.rotation.z = THREE.MathUtils.damp(
+        rUpperArmRef.current.rotation.z,
+        characterReachProgress * 0.2,
+        DAMP,
+        delta
+      )
+    }
+
+    // Right forearm — extends
+    if (rForearmRef.current) {
+      const targetBend = characterReachProgress * -0.6
+      rForearmRef.current.rotation.x = THREE.MathUtils.damp(
+        rForearmRef.current.rotation.x,
+        targetBend,
+        DAMP,
+        delta
+      )
+    }
+
+    // Whole body follows door slightly when pushing
+    if (bodyRef.current) {
+      const targetRotY = doorProgress * -0.3
+      bodyRef.current.rotation.y = THREE.MathUtils.damp(
+        bodyRef.current.rotation.y,
+        targetRotY,
+        DAMP,
+        delta
+      )
+      // Step forward slightly during push
+      bodyRef.current.position.z = THREE.MathUtils.damp(
+        bodyRef.current.position.z,
+        0.5 - doorProgress * 0.3,
+        DAMP,
+        delta
+      )
+    }
+
+    // Fade out with door scene
+    const fade = scrollProgress < 0.28
+      ? 1
+      : scrollProgress > 0.35
+        ? 0
+        : 1 - (scrollProgress - 0.28) / 0.07
+
+    groupRef.current.traverse((child) => {
+      if (child.isMesh && child.material) {
+        child.material.transparent = true
+        child.material.opacity = fade
+      }
+    })
+    groupRef.current.visible = fade > 0.01
+  })
+
+  return (
+    <group ref={groupRef} position={[1.8, 0, 0.5]}>
+      <group ref={bodyRef}>
+        {/* ── Legs ── */}
+        {/* Left leg */}
+        <group position={[-0.1, 0.45, 0]}>
+          {/* Upper leg */}
+          <mesh position={[0, 0, 0]} material={uniformMat} castShadow>
+            <capsuleGeometry args={[0.06, 0.35, 6, 12]} />
+          </mesh>
+          {/* Lower leg */}
+          <mesh position={[0, -0.4, 0]} material={uniformMat} castShadow>
+            <capsuleGeometry args={[0.055, 0.3, 6, 12]} />
+          </mesh>
+          {/* Boot */}
+          <mesh position={[0, -0.72, 0.04]} material={bootMat} castShadow>
+            <boxGeometry args={[0.12, 0.1, 0.18]} />
+          </mesh>
+        </group>
+
+        {/* Right leg */}
+        <group position={[0.1, 0.45, 0]}>
+          <mesh position={[0, 0, 0]} material={uniformMat} castShadow>
+            <capsuleGeometry args={[0.06, 0.35, 6, 12]} />
+          </mesh>
+          <mesh position={[0, -0.4, 0]} material={uniformMat} castShadow>
+            <capsuleGeometry args={[0.055, 0.3, 6, 12]} />
+          </mesh>
+          <mesh position={[0, -0.72, 0.04]} material={bootMat} castShadow>
+            <boxGeometry args={[0.12, 0.1, 0.18]} />
+          </mesh>
+        </group>
+
+        {/* ── Torso ── */}
+        <group ref={torsoRef} position={[0, 0.95, 0]}>
+          {/* Main torso */}
+          <mesh material={uniformMat} castShadow>
+            <capsuleGeometry args={[0.14, 0.35, 6, 12]} />
+          </mesh>
+
+          {/* Chest badge */}
+          <mesh position={[-0.08, 0.05, 0.14]} material={badgeMat}>
+            <boxGeometry args={[0.06, 0.06, 0.008]} />
+          </mesh>
+
+          {/* ── Head ── */}
+          <group position={[0, 0.38, 0]}>
+            {/* Neck */}
+            <mesh position={[0, -0.08, 0]} material={skinMat}>
+              <cylinderGeometry args={[0.04, 0.05, 0.1, 8]} />
+            </mesh>
+            {/* Head */}
+            <mesh position={[0, 0.08, 0]} material={skinMat} castShadow>
+              <sphereGeometry args={[0.1, 12, 12]} />
+            </mesh>
+            {/* Cap */}
+            <mesh position={[0, 0.14, 0]} material={uniformMat}>
+              <sphereGeometry args={[0.105, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2]} />
+            </mesh>
+            {/* Cap brim */}
+            <mesh position={[0, 0.1, 0.05]} rotation={[0.2, 0, 0]} material={uniformMat}>
+              <boxGeometry args={[0.2, 0.01, 0.1]} />
+            </mesh>
+          </group>
+
+          {/* ── Left Arm (idle at side) ── */}
+          <group position={[-0.2, 0.12, 0]}>
+            <mesh material={uniformMat} castShadow>
+              <capsuleGeometry args={[0.04, 0.25, 6, 10]} />
+            </mesh>
+            <mesh position={[0, -0.22, 0]} material={uniformMat} castShadow>
+              <capsuleGeometry args={[0.035, 0.2, 6, 10]} />
+            </mesh>
+            <mesh position={[0, -0.38, 0]} material={skinMat}>
+              <boxGeometry args={[0.05, 0.06, 0.03]} />
+            </mesh>
+          </group>
+
+          {/* ── Right Arm (animated — reaches for handle) ── */}
+          <group position={[0.2, 0.12, 0]} ref={rUpperArmRef}>
+            {/* Upper arm */}
+            <mesh material={uniformMat} castShadow>
+              <capsuleGeometry args={[0.04, 0.25, 6, 10]} />
+            </mesh>
+
+            {/* Forearm pivot */}
+            <group position={[0, -0.2, 0]} ref={rForearmRef}>
+              <mesh material={uniformMat} castShadow>
+                <capsuleGeometry args={[0.035, 0.2, 6, 10]} />
+              </mesh>
+              {/* Hand */}
+              <mesh ref={rHandRef} position={[0, -0.18, 0]} material={skinMat}>
+                <boxGeometry args={[0.05, 0.06, 0.03]} />
+              </mesh>
+            </group>
+          </group>
+        </group>
+      </group>
+    </group>
+  )
+}
+
+/* ── Door Panel ──────────────────────────────────────── */
 
 function DoorPanel({ side, width, height, thickness }) {
   const ref = useRef()
-  // Pivot offset: hinge at the outer edge
   const pivotSign = side === 'left' ? -1 : 1
   const pivotX = pivotSign * (width / 2)
 
@@ -19,12 +237,10 @@ function DoorPanel({ side, width, height, thickness }) {
         color: new THREE.Color('#2B5A8C'),
         roughness: 0.4,
         metalness: 0.1,
-        // clearcoat-like effect via env map intensity
       }),
     []
   )
 
-  // Panel lines (decorative inset grooves)
   const grooveMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
@@ -49,36 +265,27 @@ function DoorPanel({ side, width, height, thickness }) {
 
   return (
     <group ref={ref} position={[pivotX, 0, 0]}>
-      {/* Main panel */}
-      <mesh
-        position={[-pivotX, height / 2, 0]}
-        material={mat}
-        castShadow
-        receiveShadow
-      >
+      <mesh position={[-pivotX, height / 2, 0]} material={mat} castShadow receiveShadow>
         <boxGeometry args={[width, height, thickness]} />
       </mesh>
-
-      {/* Decorative groove — upper */}
+      {/* Decorative grooves */}
       <mesh position={[-pivotX, height * 0.72, thickness / 2 + 0.005]}>
-        <boxGeometry args={[width * 0.7, 0.025, 0.01]} />
+        <boxGeometry args={[width * 0.7, 0.03, 0.01]} />
         <primitive object={grooveMat} attach="material" />
       </mesh>
-
-      {/* Decorative groove — lower */}
       <mesh position={[-pivotX, height * 0.35, thickness / 2 + 0.005]}>
-        <boxGeometry args={[width * 0.7, 0.025, 0.01]} />
+        <boxGeometry args={[width * 0.7, 0.03, 0.01]} />
         <primitive object={grooveMat} attach="material" />
       </mesh>
-
-      {/* Decorative groove — mid vertical */}
       <mesh position={[-pivotX, height * 0.535, thickness / 2 + 0.005]}>
-        <boxGeometry args={[0.025, height * 0.35, 0.01]} />
+        <boxGeometry args={[0.03, height * 0.35, 0.01]} />
         <primitive object={grooveMat} attach="material" />
       </mesh>
     </group>
   )
 }
+
+/* ── Door Handle ─────────────────────────────────────── */
 
 function DoorHandle({ side, doorHeight }) {
   const handleMat = useMemo(
@@ -91,38 +298,26 @@ function DoorHandle({ side, doorHeight }) {
     []
   )
 
-  const xPos = side === 'left' ? 0.25 : -0.25
+  const xPos = side === 'left' ? 0.35 : -0.35
   const yPos = doorHeight * 0.48
 
   return (
-    <group position={[xPos, yPos, 0.06]}>
-      {/* Handle bar */}
+    <group position={[xPos, yPos, 0.07]}>
       <mesh material={handleMat} castShadow>
-        <cylinderGeometry args={[0.015, 0.015, 0.22, 16]} />
+        <cylinderGeometry args={[0.02, 0.02, 0.28, 16]} />
       </mesh>
-
-      {/* Handle ring */}
-      <mesh
-        position={[0, -0.12, 0]}
-        rotation={[Math.PI / 2, 0, 0]}
-        material={handleMat}
-        castShadow
-      >
-        <torusGeometry args={[0.04, 0.008, 12, 24]} />
+      <mesh position={[0, -0.15, 0]} rotation={[Math.PI / 2, 0, 0]} material={handleMat} castShadow>
+        <torusGeometry args={[0.05, 0.01, 12, 24]} />
       </mesh>
-
-      {/* Backplate */}
-      <mesh position={[0, 0, -0.03]}>
-        <boxGeometry args={[0.06, 0.16, 0.01]} />
-        <meshStandardMaterial
-          color="#B8B8B8"
-          metalness={0.9}
-          roughness={0.1}
-        />
+      <mesh position={[0, 0, -0.04]}>
+        <boxGeometry args={[0.08, 0.2, 0.015]} />
+        <meshStandardMaterial color="#B8B8B8" metalness={0.9} roughness={0.1} />
       </mesh>
     </group>
   )
 }
+
+/* ── Aerohawk Badge ──────────────────────────────────── */
 
 function AerohawkBadge({ doorHeight }) {
   const badgeMat = useMemo(
@@ -138,20 +333,13 @@ function AerohawkBadge({ doorHeight }) {
   )
 
   return (
-    <group position={[0, doorHeight * 0.82, 0.06]}>
-      {/* Diamond / hawk shape — simplified to a rotated box + triangles */}
+    <group position={[0, doorHeight * 0.85, 0.07]}>
       <mesh rotation={[0, 0, Math.PI / 4]} material={badgeMat}>
-        <boxGeometry args={[0.06, 0.06, 0.008]} />
+        <boxGeometry args={[0.08, 0.08, 0.01]} />
       </mesh>
-      {/* Outer ring */}
-      <mesh rotation={[0, 0, 0]}>
-        <ringGeometry args={[0.055, 0.065, 24]} />
-        <meshStandardMaterial
-          color="#00D4FF"
-          emissive="#00D4FF"
-          emissiveIntensity={0.3}
-          side={THREE.DoubleSide}
-        />
+      <mesh>
+        <ringGeometry args={[0.07, 0.085, 24]} />
+        <meshStandardMaterial color="#00D4FF" emissive="#00D4FF" emissiveIntensity={0.3} side={THREE.DoubleSide} />
       </mesh>
     </group>
   )
@@ -161,39 +349,24 @@ function AerohawkBadge({ doorHeight }) {
 
 export default function DoorScene() {
   const groupRef = useRef()
-  const doorWidth = 0.65
-  const doorHeight = 2.6
-  const doorThickness = 0.08
-  const frameThickness = 0.12
-  const frameDepth = 0.25
+
+  // SCALED UP dimensions
+  const doorWidth = 1.2
+  const doorHeight = 3.0
+  const doorThickness = 0.1
+  const frameThickness = 0.15
+  const frameDepth = 0.3
 
   const frameMat = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: new THREE.Color('#1A1A2E'),
-        roughness: 0.7,
-        metalness: 0.05,
-      }),
+    () => new THREE.MeshStandardMaterial({ color: new THREE.Color('#1A1A2E'), roughness: 0.7, metalness: 0.05 }),
     []
   )
-
   const wallMat = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: new THREE.Color('#0D1B2A'),
-        roughness: 0.85,
-        metalness: 0.0,
-      }),
+    () => new THREE.MeshStandardMaterial({ color: new THREE.Color('#0D1B2A'), roughness: 0.85, metalness: 0.0 }),
     []
   )
-
   const floorMat = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: new THREE.Color('#141E30'),
-        roughness: 0.6,
-        metalness: 0.1,
-      }),
+    () => new THREE.MeshStandardMaterial({ color: new THREE.Color('#141E30'), roughness: 0.6, metalness: 0.1 }),
     []
   )
 
@@ -201,12 +374,7 @@ export default function DoorScene() {
   useFrame(() => {
     if (!groupRef.current) return
     const { scrollProgress } = useViewStore.getState()
-    // Start fading at 28%, gone by 35%
-    const fade = scrollProgress < 0.28
-      ? 1
-      : scrollProgress > 0.35
-        ? 0
-        : 1 - (scrollProgress - 0.28) / 0.07
+    const fade = scrollProgress < 0.28 ? 1 : scrollProgress > 0.35 ? 0 : 1 - (scrollProgress - 0.28) / 0.07
 
     groupRef.current.traverse((child) => {
       if (child.isMesh && child.material) {
@@ -220,115 +388,67 @@ export default function DoorScene() {
   return (
     <group ref={groupRef} position={[0, 0, 0]}>
       {/* Door Frame — left pillar */}
-      <mesh
-        position={[-(doorWidth + frameThickness / 2), doorHeight / 2, 0]}
-        material={frameMat}
-        castShadow
-      >
+      <mesh position={[-(doorWidth + frameThickness / 2), doorHeight / 2, 0]} material={frameMat} castShadow>
         <boxGeometry args={[frameThickness, doorHeight + frameThickness, frameDepth]} />
       </mesh>
 
       {/* Door Frame — right pillar */}
-      <mesh
-        position={[doorWidth + frameThickness / 2, doorHeight / 2, 0]}
-        material={frameMat}
-        castShadow
-      >
+      <mesh position={[doorWidth + frameThickness / 2, doorHeight / 2, 0]} material={frameMat} castShadow>
         <boxGeometry args={[frameThickness, doorHeight + frameThickness, frameDepth]} />
       </mesh>
 
       {/* Door Frame — top lintel */}
-      <mesh
-        position={[0, doorHeight + frameThickness / 2, 0]}
-        material={frameMat}
-        castShadow
-      >
-        <boxGeometry
-          args={[doorWidth * 2 + frameThickness * 2, frameThickness, frameDepth]}
-        />
+      <mesh position={[0, doorHeight + frameThickness / 2, 0]} material={frameMat} castShadow>
+        <boxGeometry args={[doorWidth * 2 + frameThickness * 2, frameThickness, frameDepth]} />
       </mesh>
 
-      {/* Threshold / step */}
+      {/* Threshold */}
       <mesh position={[0, -0.02, 0.05]} material={frameMat}>
         <boxGeometry args={[doorWidth * 2 + frameThickness * 2, 0.04, frameDepth + 0.1]} />
       </mesh>
 
       {/* Left door panel */}
-      <group position={[0, 0, 0]}>
-        <DoorPanel
-          side="left"
-          width={doorWidth}
-          height={doorHeight}
-          thickness={doorThickness}
-        />
-        <DoorHandle side="left" doorHeight={doorHeight} />
-      </group>
+      <DoorPanel side="left" width={doorWidth} height={doorHeight} thickness={doorThickness} />
+      <DoorHandle side="left" doorHeight={doorHeight} />
 
       {/* Right door panel */}
-      <group position={[0, 0, 0]}>
-        <DoorPanel
-          side="right"
-          width={doorWidth}
-          height={doorHeight}
-          thickness={doorThickness}
-        />
-        <DoorHandle side="right" doorHeight={doorHeight} />
-      </group>
+      <DoorPanel side="right" width={doorWidth} height={doorHeight} thickness={doorThickness} />
+      <DoorHandle side="right" doorHeight={doorHeight} />
 
-      {/* Aerohawk badge centered above handle area */}
+      {/* Aerohawk badge */}
       <AerohawkBadge doorHeight={doorHeight} />
 
-      {/* Surrounding wall */}
-      <mesh position={[0, doorHeight / 2, -0.14]} material={wallMat}>
-        <boxGeometry args={[8, doorHeight + 2, 0.05]} />
+      {/* Surrounding wall — wider to fill frame */}
+      <mesh position={[0, doorHeight / 2, -0.16]} material={wallMat}>
+        <boxGeometry args={[12, doorHeight + 2, 0.05]} />
       </mesh>
 
-      {/* Floor extending outward */}
-      <mesh
-        position={[0, -0.04, 2]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        material={floorMat}
-        receiveShadow
-      >
-        <planeGeometry args={[10, 8]} />
+      {/* Floor */}
+      <mesh position={[0, -0.04, 3]} rotation={[-Math.PI / 2, 0, 0]} material={floorMat} receiveShadow>
+        <planeGeometry args={[14, 10]} />
       </mesh>
+
+      {/* Character — stands to the right of the door */}
+      <DoorCharacter />
 
       {/* Overhead spotlight */}
       <spotLight
-        position={[0, doorHeight + 1.5, 3]}
+        position={[0, doorHeight + 2, 4]}
         target-position={[0, doorHeight * 0.5, 0]}
         color="#FFF5E6"
-        intensity={4}
+        intensity={5}
         angle={0.6}
         penumbra={0.8}
-        distance={12}
+        distance={15}
         castShadow
       />
 
       {/* Flanking cyan accent lights */}
-      <pointLight
-        position={[-1.5, doorHeight * 0.6, 1.5]}
-        color="#00D4FF"
-        intensity={0.8}
-        distance={5}
-        decay={2}
-      />
-      <pointLight
-        position={[1.5, doorHeight * 0.6, 1.5]}
-        color="#00D4FF"
-        intensity={0.8}
-        distance={5}
-        decay={2}
-      />
+      <pointLight position={[-2, doorHeight * 0.6, 2]} color="#00D4FF" intensity={1.0} distance={6} decay={2} />
+      <pointLight position={[2, doorHeight * 0.6, 2]} color="#00D4FF" intensity={1.0} distance={6} decay={2} />
 
       {/* Warm ground-bounce fill */}
-      <pointLight
-        position={[0, 0.3, 4]}
-        color="#FFF0D4"
-        intensity={0.5}
-        distance={8}
-        decay={2}
-      />
+      <pointLight position={[0, 0.3, 5]} color="#FFF0D4" intensity={0.6} distance={10} decay={2} />
     </group>
   )
 }

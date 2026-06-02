@@ -262,12 +262,12 @@ export default function SunlitRoomScene() {
     const t = state.clock.elapsedTime
     const { scrollProgress } = useViewStore.getState()
 
-    // Visible from scroll 0.50 onward
+    // Visible from scroll 0.55 onward
     const fade =
-      scrollProgress < 0.50
+      scrollProgress < 0.55
         ? 0
-        : scrollProgress < 0.60
-          ? (scrollProgress - 0.50) / 0.10
+        : scrollProgress < 0.65
+          ? (scrollProgress - 0.55) / 0.10
           : 1
 
     groupRef.current.traverse((child) => {
@@ -393,6 +393,56 @@ export default function SunlitRoomScene() {
             </mesh>
           )
         )}
+      </group>
+
+      {/* Luxury Bed */}
+      <group position={[2, 0, ROOM_Z - 2]}>
+        {/* Headboard */}
+        <mesh position={[0, 0.75, -0.65]} castShadow>
+          <boxGeometry args={[2.2, 1.2, 0.08]} />
+          <meshStandardMaterial color="#2D3748" roughness={0.6} metalness={0.1} />
+        </mesh>
+        {/* Mattress */}
+        <mesh position={[0, 0.3, 0]} material={sofaMat} castShadow receiveShadow>
+          <boxGeometry args={[2.0, 0.3, 1.4]} />
+        </mesh>
+        {/* Duvet */}
+        <mesh position={[0, 0.48, 0.15]} castShadow>
+          <boxGeometry args={[1.9, 0.08, 1.1]} />
+          <meshStandardMaterial color="#F8F6F3" roughness={0.8} metalness={0.0} />
+        </mesh>
+        {/* Pillows */}
+        <mesh position={[-0.45, 0.52, -0.45]} rotation={[0.1, 0, 0.05]} castShadow>
+          <boxGeometry args={[0.5, 0.12, 0.35]} />
+          <meshStandardMaterial color="#F0EDE8" roughness={0.75} />
+        </mesh>
+        <mesh position={[0.45, 0.52, -0.45]} rotation={[0.1, 0, -0.05]} castShadow>
+          <boxGeometry args={[0.5, 0.12, 0.35]} />
+          <meshStandardMaterial color="#F0EDE8" roughness={0.75} />
+        </mesh>
+        {/* Accent pillow */}
+        <mesh position={[0, 0.55, -0.3]} rotation={[0.15, 0.1, 0]}>
+          <boxGeometry args={[0.3, 0.1, 0.25]} />
+          <meshStandardMaterial color="#00D4FF" roughness={0.6} metalness={0.05} />
+        </mesh>
+      </group>
+
+      {/* Wall Art Frame */}
+      <group position={[-4, 1.8, ROOM_Z - 4.9]}>
+        {/* Frame */}
+        <mesh castShadow>
+          <boxGeometry args={[1.2, 0.9, 0.04]} />
+          <meshStandardMaterial color="#1A1A2E" roughness={0.5} metalness={0.2} />
+        </mesh>
+        {/* Art canvas — gradient accent */}
+        <mesh position={[0, 0, 0.025]}>
+          <planeGeometry args={[1.0, 0.7]} />
+          <meshStandardMaterial
+            color="#0A1628"
+            emissive="#00D4FF"
+            emissiveIntensity={0.15}
+          />
+        </mesh>
       </group>
 
       {/* Plants */}

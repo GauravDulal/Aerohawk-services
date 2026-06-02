@@ -9,7 +9,7 @@ export default function ThreeScene() {
   return (
     <div id="three-canvas-container">
       <Canvas
-        camera={{ position: [0, 1.6, 8], fov: 50, near: 0.1, far: 200 }}
+        camera={{ position: [0, 1.6, 10], fov: 50, near: 0.1, far: 200 }}
         dpr={[1, 1.5]}
         shadows
         gl={{
@@ -31,10 +31,10 @@ export default function ThreeScene() {
         {/* Phase A: Premium front door */}
         <DoorScene />
 
-        {/* Phase B: Living room with cleaning drone */}
+        {/* Phase B: Dirty→Clean room with worker characters */}
         <LivingRoomScene />
 
-        {/* Phase C: Immaculate sunlit room */}
+        {/* Phase C: Pristine sunlit room */}
         <SunlitRoomScene />
       </Canvas>
     </div>
